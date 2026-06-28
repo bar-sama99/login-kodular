@@ -1,10 +1,10 @@
 <?php
 // koneksi.php
 // Konfigurasi Database
-$host     = "sql308.infinityfree.com";
-$dbname   = "if0_42240128_db_kodular";
-$username = "if0_42240128";
-$password = "uT8aPzWykKj";
+$host     = "mysql.railway.internal";
+$dbname   = "railway";
+$username = "root";
+$password = "aFNuBUPzyXycvDNgJHwBJZELdwxcaQFp";
 
 // Membuat koneksi
 try {
