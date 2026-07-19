@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             echo "terdaftar";
         } else {
             // Masukkan data baru ke database jika lolos semua pengecekan
-            $insert = $conn->prepare("INSERT INTO tb_data2 (user, pass, nama_lengkap, email) VALUES (:user, :pass, :nama, :email)");
+           $insert = $conn->prepare("INSERT INTO tb_data2 (tb_data2_user, tb_data2_pass, tb_data2_nama_lengkap, tb_data2_email) VALUES (:user, :pass, :nama, :email)");
             $insert->execute([
                 ':user' => $user,
                 ':pass' => $pass,
