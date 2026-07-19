@@ -14,7 +14,7 @@ if(isset($_REQUEST['user']) && isset($_REQUEST['pass'])){
 
     try {
         // REVISI 2: Mengubah nama tabel menjadi 'tb_data' sesuai phpMyAdmin kamu
-       $sql = "SELECT * FROM tb_data2 WHERE tb_data2_user = :user AND tb_data2_pass = :pass";
+       $sql = "SELECT * FROM tb_data2 WHERE user = :user AND pass = :pass";
         $stmt = $conn->prepare($sql);
         $stmt->execute([':user' => $user, ':pass' => $pass]);
         $data = $stmt->fetch();
