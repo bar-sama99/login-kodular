@@ -1,17 +1,15 @@
 <?php
 // koneksi.php
-// Konfigurasi Database
+// Konfigurasi Database Otomatis via Environment Variables Railway
 
-// ⚠️ GANTI VALUE DI BAWAH INI SESUAI YANG ADA DI TAB VARIABLES MYSQL KAMU!
-$host     = "mysql.railway.internal";     // Ambil nilai dari MYSQLHOST (Contoh bentuknya: 'mysql.railway.internal' atau string publik dari Railway)
-$port     = "3306";     // Ambil nilai dari MYSQLPORT (Contoh: 3306 atau angka acak lainnya)
-$dbname   = "railway";                     // Tetap 'railway' jika sesuai di database
-$username = "root";                        // Ambil nilai dari MYSQLUSER
-$password = "aFNuBUPzyXycvDNgJHwBJZELdwxcaQFp"; // Password kamu sudah benar
+$host     = getenv('MYSQLHOST');
+$port     = getenv('MYSQLPORT');
+$dbname   = getenv('MYSQLDATABASE');
+$username = getenv('MYSQLUSER');
+$password = getenv('MYSQLPASSWORD');
 
 // Membuat koneksi
 try {
-    // Kita tambahkan parameter port di dalam string koneksi PDO
     $conn = new PDO(
         "mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4",
         $username,
