@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Web Barcode Scanner TyrePick BPW</title>
+    
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+            background-color: #0f172a;
+            color: #ffffff;
+        }
+        #reader {
+            width: 320px;
+            margin: 15px auto;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid #38bdf8;
+            background: #000;
+        }
+        #status {
+            margin-top: 15px;
+            font-weight: bold;
+            padding: 12px;
+            border-radius: 8px;
+            background-color: #334155;
+            color: #cbd5e1;
+            max-width: 350px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .success { background-color: #15803d !important; color: #fff !important; }
+        .error { background-color: #b91c1c !important; color: #fff !important; }
+        .badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .connected { background: #22c55e; color: #000; }
+        .disconnected { background: #ef4444; color: #fff; }
+    </style>
+</head>
+<body>
+    <h2>Web Pemindai Barcode Ban</h2>
+    <div id="mqttBadge" class="badge disconnected">Status: Terputus dari Broker</div>
+
+    <div id="reader"></div>
+    <div id="status">Kamera Belum Aktif</div>
+
+    <script>
+        // 1. DATABASE MAPPING UKURAN BAN KE SLOT LED
+        // Slot 1 = LED Pin 5 (D1)
+        // Slot 2 = LED Built-in (D4)
+        // Slot 3 = LED Pin 6 (D6)
+        const databaseRakStiker = {
+            "185/60 R15": 1,
+            "185/65 R15": 2,
+            "195/60 R15": 3
+        };
+
+        const MQTT_BROKER = "wss://broker.hivemq.com:8000/mqtt"; // Secure WebSocket
+        const MQTT_TOPIC = "tyrepick/gudang/slot";
+
+        // 2. KONEKSI KE BROKER MQTT
+        const client = mqtt.connect(MQTT_BROKER);
+        const mqttBadge = document.getElementById("mqttBadge");
+        const statusDiv = document.getElementById("status");
+
+        client.on("connect", () => {
+            mqttBadge.className = "badge connected";
+            mqttBadge.innerText = "Status: Terhubung ke Broker";
+        });
+
+        client.on("offline", () => {
+            mqttBadge.className = "badge disconnected";
+            mqttBadge.innerText = "Status: Terputus dari Broker";
+        });
+
+        // 3. FUNGSI KIRIM SINYAL DENGAN MAPPING SLOT
+        function processAndSend(codeText) {
+            let cleanCode = codeText.trim();
+
+            if (databaseRakStiker.hasOwnProperty(cleanCode)) {
+                let slotNumber = databaseRakStiker[cleanCode];
+
+                // Kirim sinyal angka slot (1, 2, atau 3) ke MQTT Broker
+                client.publish(MQTT_TOPIC, slotNumber.toString());
+
+                let infoPin = "";
+                if(slotNumber === 1) infoPin = "LED Pin 5 (D1)";
+                else if(slotNumber === 2) infoPin = "LED Built-in (D4)";
+                else if(slotNumber === 3) infoPin = "LED Pin 6 (D6)";
+
+                statusDiv.className = "success";
+                statusDiv.innerHTML = `BERHASIL!<br>Size: ${cleanCode}<br><b>${infoPin} MENYALA</b>`;
+            } else {
+                statusDiv.className = "error";
+                statusDiv.innerHTML = `GAGAL!<br>Ukuran "${cleanCode}" Tidak Terdaftar!`;
+            }
+        }
+
+        function onScanSuccess(decodedText, decodedResult) {
+            console.log(`Scan berhasil: ${decodedText}`);
+            processAndSend(decodedText);
+        }
+
+        // 4. JALANKAN KAMERA
+        let html5QrcodeScanner = new Html5QrcodeScanner("reader", {
+            fps: 10,
+            qrbox: { width: 220, height: 220 },
+        });
+        html5QrcodeScanner.render(onScanSuccess);
+    </script>
+</body>
+</html>
