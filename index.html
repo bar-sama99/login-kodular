@@ -146,7 +146,8 @@
             "195/60 R15": 3
         };
 
-        const MQTT_BROKER = "wss://broker.hivemq.com:8000/mqtt"; 
+      // ✅ BENAR (Port 8884 untuk wss:// HiveMQ)
+const MQTT_BROKER = "wss://broker.hivemq.com:8884/mqtt";
         const MQTT_TOPIC = "tyrepick/gudang/slot";
 
         // 2. KONEKSI KE BROKER MQTT
