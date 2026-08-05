@@ -226,11 +226,17 @@ const MQTT_BROKER = "wss://broker.hivemq.com:8884/mqtt";
         }
 
         // 6. JALANKAN KAMERA
-        let html5QrcodeScanner = new Html5QrcodeScanner("reader", {
-            fps: 10,
-            qrbox: { width: 220, height: 220 },
-        });
-        html5QrcodeScanner.render(onScanSuccess);
+    // 6. JALANKAN KAMERA (Dipaksa Kamera Belakang)
+let html5QrcodeScanner = new Html5QrcodeScanner("reader", {
+    fps: 10,
+    qrbox: { width: 220, height: 220 },
+    rememberLastUsedCamera: true,
+    // Meminta browser untuk mengutamakan kamera belakang (environment)
+    videoConstraints: {
+        facingMode: "environment"
+    }
+});
+html5QrcodeScanner.render(onScanSuccess);
     </script>
 </body>
 </html>
