@@ -9,71 +9,151 @@
     <script src="https://unpkg.com/html5-qrcode"></script>
 
     <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: Arial, sans-serif;
             text-align: center;
-            margin: 20px;
+            padding: 20px;
             background-color: #0f172a;
             color: #ffffff;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
         }
+        .wrapper {
+            width: 100%;
+            max-width: 450px;
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        h2 { margin-bottom: 10px; font-size: 22px; color: #38bdf8; }
         #reader {
-            width: 320px;
-            margin: 15px auto;
+            width: 100%;
             border-radius: 10px;
             overflow: hidden;
             border: 2px solid #38bdf8;
             background: #000;
+            margin: 15px 0;
         }
+        
+        /* Fitur Search */
+        .search-container {
+            display: flex;
+            gap: 8px;
+            margin: 15px 0;
+        }
+        .search-input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #475569;
+            background: #0f172a;
+            color: white;
+            outline: none;
+        }
+        .search-btn {
+            padding: 10px 16px;
+            background: #38bdf8;
+            color: #0f172a;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .search-btn:hover { background: #0ea5e9; }
+
+        /* Status & Badge */
         #status {
-            margin-top: 15px;
+            margin: 15px 0;
             font-weight: bold;
             padding: 12px;
             border-radius: 8px;
             background-color: #334155;
             color: #cbd5e1;
-            max-width: 350px;
-            margin-left: auto;
-            margin-right: auto;
+            line-height: 1.4;
         }
         .success { background-color: #15803d !important; color: #fff !important; }
         .error { background-color: #b91c1c !important; color: #fff !important; }
+        
         .badge {
             display: inline-block;
             padding: 5px 10px;
             border-radius: 12px;
             font-size: 12px;
             font-weight: bold;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
         }
         .connected { background: #22c55e; color: #000; }
         .disconnected { background: #ef4444; color: #fff; }
+
+        /* Tombol Cepat Size */
+        .btn-zone {
+            margin-top: 20px;
+            border-top: 1px solid #334155;
+            padding-top: 15px;
+            text-align: left;
+        }
+        .btn-zone h3 { font-size: 14px; color: #94a3b8; margin-bottom: 10px; text-align: center; }
+        .size-btn {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 8px;
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            transition: 0.2s;
+        }
+        .btn-slot1 { background-color: #0284c7; }
+        .btn-slot2 { background-color: #7c3aed; }
+        .btn-slot3 { background-color: #d97706; }
+        .btn-reset { background-color: #ef4444; margin-top: 5px; }
+        .size-btn:hover { opacity: 0.9; transform: scale(0.99); }
     </style>
 </head>
 <body>
-    <h2>Web Pemindai Barcode Ban</h2>
-    <div id="mqttBadge" class="badge disconnected">Status: Terputus dari Broker</div>
+    <div class="wrapper">
+        <h2>Web Pemindai Barcode Ban</h2>
+        <div id="mqttBadge" class="badge disconnected">Status: Terputus dari Broker</div>
 
-    <div id="reader"></div>
-    <div id="status">Kamera Belum Aktif</div>
+        <div class="search-container">
+            <input type="text" id="searchInput" class="search-input" placeholder="Ketik ukuran ban (Contoh: 185/60 R15)">
+            <button class="search-btn" onclick="searchSize()">Cari</button>
+        </div>
+
+        <div id="reader"></div>
+        
+        <div id="status">Kamera Belum Aktif / Siap Menerima Scan</div>
+
+        <div class="btn-zone">
+            <h3>PILIH UKURAN BAN DI BAWAH:</h3>
+            <button class="size-btn btn-slot1" onclick="triggerManual('185/60 R15')">185/60 R15 → Nyalakan PIN 5 (D1)</button>
+            <button class="size-btn btn-slot2" onclick="triggerManual('185/65 R15')">185/65 R15 → Nyalakan Built-in (D4)</button>
+            <button class="size-btn btn-slot3" onclick="triggerManual('195/60 R15')">195/60 R15 → Nyalakan PIN 6 (D6)</button>
+            <button class="size-btn btn-reset" onclick="triggerReset()">MATIKAN SEMUA LED</button>
+        </div>
+    </div>
 
     <script>
         // 1. DATABASE MAPPING UKURAN BAN KE SLOT LED
-        // Slot 1 = LED Pin 5 (D1)
-        // Slot 2 = LED Built-in (D4)
-        // Slot 3 = LED Pin 6 (D6)
         const databaseRakStiker = {
             "185/60 R15": 1,
             "185/65 R15": 2,
             "195/60 R15": 3
         };
 
-        const MQTT_BROKER = "wss://broker.hivemq.com:8000/mqtt"; // Secure WebSocket
+        const MQTT_BROKER = "wss://broker.hivemq.com:8000/mqtt"; 
         const MQTT_TOPIC = "tyrepick/gudang/slot";
 
         // 2. KONEKSI KE BROKER MQTT
         const client = mqtt.connect(MQTT_BROKER);
         const mqttBadge = document.getElementById("mqttBadge");
         const statusDiv = document.getElementById("status");
+        const searchInput = document.getElementById("searchInput");
 
         client.on("connect", () => {
             mqttBadge.className = "badge connected";
@@ -85,14 +165,14 @@
             mqttBadge.innerText = "Status: Terputus dari Broker";
         });
 
-        // 3. FUNGSI KIRIM SINYAL DENGAN MAPPING SLOT
+        // 3. FUNGSI UTAMA PEMROSESAN DATA
         function processAndSend(codeText) {
             let cleanCode = codeText.trim();
 
             if (databaseRakStiker.hasOwnProperty(cleanCode)) {
                 let slotNumber = databaseRakStiker[cleanCode];
 
-                // Kirim sinyal angka slot (1, 2, atau 3) ke MQTT Broker
+                // Kirim sinyal angka slot ke MQTT Broker
                 client.publish(MQTT_TOPIC, slotNumber.toString());
 
                 let infoPin = "";
@@ -113,7 +193,38 @@
             processAndSend(decodedText);
         }
 
-        // 4. JALANKAN KAMERA
+        // 4. LOGIKA TOMBOL CARI (SEARCH)
+        function searchSize() {
+            let query = searchInput.value;
+            if(query.trim() !== "") {
+                processAndSend(query);
+            } else {
+                alert("Silakan isi ukuran ban terlebih dahulu!");
+            }
+        }
+
+        // Mengizinkan pencarian dengan menekan tombol 'Enter' pada keyboard
+        searchInput.addEventListener("keyup", function(event) {
+            if (event.key === "Enter") {
+                searchSize();
+            }
+        });
+
+        // 5. LOGIKA TOMBOL DI UI (LANGSUNG NYALAKAN SETIAP SIZE)
+        function triggerManual(sizeText) {
+            searchInput.value = sizeText; // Masukkan teks ke kolom pencarian sebagai penanda
+            processAndSend(sizeText);
+        }
+
+        function triggerReset() {
+            client.publish(MQTT_TOPIC, "0"); // Kirim kode 0 ke ESP8266 untuk matikan semua
+            statusDiv.className = "";
+            statusDiv.style.backgroundColor = "#334155";
+            statusDiv.innerHTML = "RESET: Semua LED Telah Dimatikan";
+            searchInput.value = "";
+        }
+
+        // 6. JALANKAN KAMERA
         let html5QrcodeScanner = new Html5QrcodeScanner("reader", {
             fps: 10,
             qrbox: { width: 220, height: 220 },
