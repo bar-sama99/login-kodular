@@ -225,17 +225,22 @@ const MQTT_BROKER = "wss://broker.hivemq.com:8884/mqtt";
             searchInput.value = "";
         }
 
-        // 6. JALANKAN KAMERA
-    // 6. JALANKAN KAMERA (Dipaksa Kamera Belakang)
+       // 6. JALANKAN KAMERA (OPTIMASI KECEPATAN SUPER RESPONSIIF)
 let html5QrcodeScanner = new Html5QrcodeScanner("reader", {
-    fps: 10,
+    fps: 25, // Dinaikkan dari 10 ke 25 agar deteksi frame jauh lebih cepat
     qrbox: { width: 220, height: 220 },
     rememberLastUsedCamera: true,
-    // Meminta browser untuk mengutamakan kamera belakang (environment)
+    experimentalFeatures: {
+        useBarCodeDetectorIfSupported: true // Menggunakan akselerasi hardware HP jika didukung
+    },
     videoConstraints: {
-        facingMode: "environment"
+        facingMode: "environment",
+        // Batasi resolusi ke 720p (1280x720) agar pemrosesan gambar oleh JS tidak berat
+        width: { min: 640, ideal: 1280, max: 1280 },
+        height: { min: 480, ideal: 720, max: 720 }
     }
 });
+
 html5QrcodeScanner.render(onScanSuccess);
     </script>
 </body>
